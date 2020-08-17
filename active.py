@@ -17,9 +17,9 @@ Misc Variables:
 __version__
 """
 
-import requests, json, random, time, urllib3
-
-urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+import requests, json, random, time
+from requests.packages.urllib3.exceptions import InsecureRequestWarning
+requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
 class Error(Exception):
     """Base class for custom exceptions."""
@@ -193,7 +193,7 @@ class ActiveGame:
         self.updateEventList()
         self.loadPlayerList()
     def updateEventList(self):
-        """Adds new Events to event_list, returns true if there is a new event."""
+        """Adds new Events to event_list, returns list of new events."""
         #gets json data from leagueAPI
 
         temp_event_list = self.event_list
@@ -201,18 +201,20 @@ class ActiveGame:
         try:
             response = requests.get(url, verify = False)
             output = response.json()
-            return output['Events']
+            self.event_list = output['Events']
         except Exception:
             raise RequestError('Unable to retrieve Game Events')
         #checks if a new event has been added
         eventIDList = []
+        newEvents = [] 
+        count = 0
         for event in temp_event_list:
             eventIDList.append(event['EventID'])
         for event in self.event_list:
             if not event['EventID'] in eventIDList:
-                self.event_list.append(event)
-                return True
-        return False
+                newEvents.append(event)
+        
+        return newEvents
 
     def getLastEvent(self):
         """Gets the most recent event in the event_list, returns None if event_list is empty."""
@@ -230,10 +232,13 @@ class ActiveGame:
         output = res.json()
 
         active_out = active.json()
+        
         self.players.clear()
         for user in output: 
             if Player(user).summoner_name == active_out['summonerName']:
-                self.players.append(ActivePlayer(user, active_out))
+                actPlayer = ActivePlayer(user, active_out)
+                self.players.append(actPlayer)
+                self.active_player = actPlayer
             else:
                 self.players.append(Player(user))
             
