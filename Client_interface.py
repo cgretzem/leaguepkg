@@ -1,5 +1,6 @@
-
 import subprocess
+import pprint
+import asyncio
 import requests
 import base64
 import urllib3
@@ -43,7 +44,9 @@ class Client():
         """
         self.session = None
         self.app_port = ""
+        self.summoner_id = 0
         self.__login()
+        self.check_connection()
 
     
     def check_connection(self):
@@ -54,6 +57,7 @@ class Client():
         `bool` : True when the connection is successful
         """
         resp = self.get_req('/lol-summoner/v1/current-summoner')
+        self.summoner_id = resp.json()['summonerId']
         return resp.ok
 
         
@@ -67,31 +71,18 @@ class Client():
         Contents of dict:
         -----------------------------------
         `autoModifiedSelections` : list
-
         `current` : bool
-
         `id` : float
-
         `isActive` : bool
-
         `isDeletable` : bool
-
         `isEditable` : bool
-
         `isValid` : bool
-
         `lastModified` : float
-
         `name` : str
-
         `order` : int
-
         `primaryStyleId` : int
-
         `selectedPerkIds : list(int)
-
         `subStyleId` : int
-
         
         """
         return self.get_req('/lol-perks/v1/pages').json()
@@ -107,29 +98,17 @@ class Client():
         Contents of dict:
         -----------------------------------
         `autoModifiedSelections` : []
-
         `current` : bool
-
         `id` : float
-
         `isActive` : bool
-
         `isDeletable` : bool
-
         `isEditable` : bool
-
         `isValid` : bool
-
         `lastModified` : float
-
         `name` : str
-
         `order` : int
-
         `primaryStyleId` : int
-
         `selectedPerkIds : [int]
-
         `subStyleId` : int
         
         """
@@ -176,7 +155,32 @@ class Client():
             "spell2Id": spell_2
         }
         self.patch_req('/lol-champ-select/v1/session/my-selection', data = data)
-        
+
+
+    def get_champ_select(self):
+        return self.get_req('/lol-champ-select/v1/session').json()
+    
+    def in_champ_select(self):
+        return self.get_req('/lol-champ-select/v1/session').ok
+
+    async def select_champ(self, champID: int):
+        cellID = -1
+        ID = -1
+        data = {}
+        select = self.get_champ_select()
+        team = select['myTeam']
+        for player in team:
+            if(team['summonerId'] == self.summoner_id):
+                cellID = team['cellId']
+        for player in select['actions'][0][0]:
+            if player['actorCellId'] == cellID:
+                ID = player['id']
+                data = player
+        data['championId'] = champID
+        self.patch_req(f'/lol-champ-select/v1/session/actions/{ID}', data = data)
+        asyncio.sleep(1)
+        data['completed'] = True
+        self.patch_req(f'/lol-champ-select/v1/session/actions/{ID}', data = data)
     def __login(self):
         """
         Method to be called in the constructor of Client in order to interface with the LCU API.
@@ -276,5 +280,5 @@ class Client():
 if __name__ == "__main__":
     client = Client()
     print(client.check_connection())
-    print(client.get_current_page())
-    
+    print(client.summoner_id)
+    pprint.pprint(client.select_champion(1,1))
