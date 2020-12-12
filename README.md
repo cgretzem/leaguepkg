@@ -1,2 +1,2 @@
 # leaguepkg
-A package that interfaces with the LOL API, currently only with active games.
+A package that interfaces with the LOL API, including active games and the client itself.
