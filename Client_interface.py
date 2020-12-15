@@ -56,6 +56,9 @@ class Client():
     `get_game_phase()` : str
         Returns the current game phase.
 
+    `get_player_champ_select()` : list
+        Returns a list of actions for the current champ select
+
     select_champ(`champID`: int) : bool
         Locks in the champion with the specified ID. Returns true if lock was successful.
 
@@ -267,6 +270,29 @@ class Client():
         """
         return self.get_req('/lol-gameflow/v1/gameflow-phase').json()
 
+    def get_player_champ_select(self):
+        """
+        Method to get only the local players actions in champ select.
+
+        Returns : 
+        -----------------
+        `list` : list of actions for the local player.
+        """
+        cellID = -1
+        select = self.get_champ_select()
+        team = select['myTeam']
+
+        for player in team:
+            if(player['summonerId'] == self.summoner_id):
+                cellID = player['cellId']
+        actions = []
+        for player in select['actions']:
+            for act in player:
+
+                if act['actorCellId'] == cellID:
+                    actions.append(act)
+        return actions
+
     def select_champ(self, champID: int):
         """
         Method to lock in the champion with the specified ID.
@@ -282,22 +308,16 @@ class Client():
         """
         cellID = -1
         playerID = -1
-        select = self.get_champ_select()
-        team = select['myTeam']
-
-        for player in team:
-            if(player['summonerId'] == self.summoner_id):
-                cellID = player['cellId']
-
-        for player in select['actions'][0]:
-            if player['actorCellId'] == cellID:
-                playerID = player['id']
-                print(type(playerID))
+        summoner_data = self.get_player_champ_select()
         data = {'championId': champID,}
+        for entry in summoner_data:
+            if entry['isAllyAction'] == True and entry['isInProgress'] == True:
+                playerID = entry['id']
+                hover = self.patch_req(f'/lol-champ-select/v1/session/actions/{playerID}', data = json.dumps(data))
+                lock = self.post_req(f'/lol-champ-select/v1/session/actions/{playerID}/complete', data = json.dumps(data))
+                return (hover.ok and lock.ok)
+        return False
 
-        hover = self.patch_req(f'/lol-champ-select/v1/session/actions/{playerID}', data = json.dumps(data))
-        lock = self.post_req(f'/lol-champ-select/v1/session/actions/{playerID}/complete', data = json.dumps(data))
-        return (hover.ok and lock.ok)
     def __login(self):
         """
         Method to be called in the constructor of Client in order to interface with the LCU API.
@@ -429,6 +449,9 @@ class Async_Client():
     
     `async get_game_phase()` : str
         Returns the current game phase.
+        
+     `async get_player_champ_select()` : list
+        Returns a list of actions for the current champ select
 
     `async select_champ`(`champID`: int) : bool
         Locks in the champion with the specified ID. Returns true if lock was successful.
@@ -470,7 +493,8 @@ class Async_Client():
         -----------------
         `bool` : True when the connection is successful
         """
-        return await self.get_req('/lol-summoner/v1/current-summoner').ok
+        response = await self.get_req('/lol-summoner/v1/current-summoner')
+        return response.ok
         
 
     
@@ -482,8 +506,8 @@ class Async_Client():
         -----------------
         `list` : full of champion IDs that can be picked
         """
-
-        return await self.get_req('/lol-champ-select/v1/pickable-champion-ids').json()
+        pickable_champs = await self.get_req('/lol-champ-select/v1/pickable-champion-ids')
+        return pickable_champs.json()
 
     
     async def get_rune_pages(self):
@@ -523,7 +547,8 @@ class Async_Client():
         `subStyleId` : int
         
         """
-        return await self.get_req('/lol-perks/v1/pages').json()
+        rune_pages = await self.get_req('/lol-perks/v1/pages')
+        return rune_pages.json()
 
 
     async def get_current_page(self):
@@ -563,8 +588,8 @@ class Async_Client():
         `subStyleId` : int
         
         """
-
-        return await self.get_req('/lol-perks/v1/currentpage').json()
+        current_page = await self.get_req('/lol-perks/v1/currentpage')
+        return current_page.json()
 
     async def change_current_page(self, name, primary_tree : int, perks : list, secondary_tree : int):
         """
@@ -593,7 +618,8 @@ class Async_Client():
         data["selectedPerkIds"] = perks
         data["primaryStyleId"] = primary_tree
         data["subStyleId"] = secondary_tree
-        return await self.post_req('/lol-perks/v1/currentpage', data = json.dumps(data))
+        response = await self.post_req('/lol-perks/v1/currentpage', data = json.dumps(data))
+        return response
 
     async def change_summoners(self, spell_1 : int, spell_2 : int):
         """
@@ -615,7 +641,8 @@ class Async_Client():
             "spell1Id": spell_1,
             "spell2Id": spell_2
         }
-        return await self.patch_req('/lol-champ-select/v1/session/my-selection', data = json.dumps(data))
+        response = await self.patch_req('/lol-champ-select/v1/session/my-selection', data = json.dumps(data))
+        return response 
 
 
     async def get_champ_select(self):
@@ -626,7 +653,9 @@ class Async_Client():
         --------------------
         `dict` : all data from champ select
         """
-        return await self.get_req('/lol-champ-select/v1/session').json()
+        champ_select = await (self.get_req('/lol-champ-select/v1/session'))
+
+        return champ_select.json()
     
     async def get_game_phase(self):
         """
@@ -636,7 +665,30 @@ class Async_Client():
         -------------
         `str` : current game phase
         """
-        return await self.get_req('/lol-gameflow/v1/gameflow-phase').json()
+        game_phase = await self.get_req('/lol-gameflow/v1/gameflow-phase')
+        return game_phase.json()
+
+    async def get_player_champ_select(self):
+        """
+        Method to get only the local players actions in champ select.
+
+        Returns : 
+        -----------------
+        `list` : list of actions for the local player.
+        """
+        cellID = -1
+        select = await self.get_champ_select()
+        team = select['myTeam']
+        for player in team:
+            if(player['summonerId'] == self.summoner_id):
+                cellID = player['cellId']
+        actions = []
+        for player in select['actions']:
+            for act in player:
+
+                if act['actorCellId'] == cellID:
+                    actions.append(act)
+        return actions
 
     async def select_champ(self, champID: int):
         """
@@ -653,22 +705,17 @@ class Async_Client():
         """
         cellID = -1
         playerID = -1
-        select = self.get_champ_select()
-        team = select['myTeam']
-
-        for player in team:
-            if(player['summonerId'] == self.summoner_id):
-                cellID = player['cellId']
-
-        for player in select['actions'][0]:
-            if player['actorCellId'] == cellID:
-                playerID = player['id']
-                print(type(playerID))
+        summoner_data = await self.get_player_champ_select()
         data = {'championId': champID,}
-
-        hover = await self.patch_req(f'/lol-champ-select/v1/session/actions/{playerID}', data = json.dumps(data))
-        lock = await self.post_req(f'/lol-champ-select/v1/session/actions/{playerID}/complete', data = json.dumps(data))
-        return (hover.ok and lock.ok)
+        for entry in summoner_data:
+            if entry['isAllyAction'] == True and entry['isInProgress'] == True:
+                playerID = entry['id']
+                
+                hover = await self.patch_req(f'/lol-champ-select/v1/session/actions/{playerID}', data = json.dumps(data))
+                lock = await self.post_req(f'/lol-champ-select/v1/session/actions/{playerID}/complete', data = json.dumps(data))
+                return (hover.ok and lock.ok)
+        return False
+        
     def __login(self):
         """
         Method to be called in the constructor of Client in order to interface with the LCU API.
@@ -696,8 +743,8 @@ class Async_Client():
         sess.headers.update(headers)
         self.session = sess
         try:
-            self.summoner_id = sess.get('https://127.0.0.1:' + self.app_port + '/lol-summoner/v1/current-summoner').json()['summonerId']
-        except Exception:
+            self.summoner_id = self.session.get('https://127.0.0.1:' + self.app_port + '/lol-summoner/v1/current-summoner', verify = False).json()['summonerId']
+        except Exception as e:
             raise ClientConnectionError('Unable to establish connection to League Client.')
 
 
