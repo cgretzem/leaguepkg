@@ -2,6 +2,8 @@
 
 """
 import json
+import urllib.request
+import os, tarfile
 from os import path
 from update import set_champions, set_items, set_runes, set_stat_mods
 
@@ -92,12 +94,21 @@ class Data:
 
     def check_data(self):
         """ """
+        zip_path = 'dragontail-10.25.1.tgz'
+        if not path.exists(zip_path):
+            url = 'https://ddragon.leagueoflegends.com/cdn/dragontail-10.25.1.tgz'
+            outDir = f'{os.getcwd()}/dragontail-10.25.1.tgz'
+            urllib.request.urlretrieve(url, outDir)
+            tar = tarfile.open(outDir, 'r:gz')
+            tar.extractall()
+
+
         data_files = ['champions.txt', 'items.txt', 'runes.txt', 'stat_mods.txt']
         for txt in data_files:
             if not path.exists(txt):
                 self.update_data()
                 break
-
+    
     
     def update_data(self):
         """ Updates and stores LOL dicts in respective .txt files """
@@ -112,3 +123,6 @@ class Data:
 
         with open("stat_mods.txt", "w") as f:
             json.dump(set_stat_mods(), f, indent=2)
+
+if __name__ == '__main__':
+    data = Data()

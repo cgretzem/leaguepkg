@@ -25,7 +25,7 @@ stat_mods_list = []
 
 def set_champions():
     """ Creates champion dict from LOL champion json file """
-    with open("dragontail-10.25.1/10.25.1/data/en_US/champion.json", "r", encoding="utf8") as f:
+    with open("10.25.1/data/en_US/champion.json", "r", encoding="utf8") as f:
         champion_data = (json.load(f)["data"])
         for champion in champion_data:
             champ_list.append(dict(name = champion_data[champion]["name"], id = champion_data[champion]["key"], image = champion_data[champion]["image"]["full"]))
@@ -38,7 +38,7 @@ def set_items():
     legendaries_list = []
     boots_list = []
 
-    with open("dragontail-10.25.1/10.25.1/data/en_US/item.json", "r", encoding="utf8") as f:
+    with open("10.25.1/data/en_US/item.json", "r", encoding="utf8") as f:
         items_data = (json.load(f)["data"])
         for item in items_data:
             name = items_data[item]["name"]
@@ -62,7 +62,7 @@ def set_items():
 def set_runes():
     """ Creates a runes dict from LOL runes json file """
 
-    with open("dragontail-10.25.1/10.25.1/data/en_US/runesReforged.json", "r", encoding="utf8") as f:
+    with open("10.25.1/data/en_US/runesReforged.json", "r", encoding="utf8") as f:
         runes_data = (json.load(f))
 
         trees_list = []
