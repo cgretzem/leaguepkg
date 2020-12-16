@@ -60,10 +60,11 @@ class UltimateBravery:
         
         items = "Item Set\n" + div + f"{self.items[0]}, {self.items[1]}, {self.items[2]}, {self.items[3]}, {self.items[4]}, {self.items[5]}\n\n"
         
-        prims = f"Primary: {self.runes[0]} - {self.runes[1]}: {self.runes[2]}, {self.runes[3]}, {self.runes[4]}\n"
-        secs = f"Secondary: {self.runes[5]} - {self.runes[6]}: {self.runes[7]}, {self.runes[8]}\n"
-        stat_mods = f"Stat Mods: {self.runes[9]}, {self.runes[10]}, {self.runes[11]}"
-        runes = "Rune Page\n" + div + prims + secs + stat_mods
+        perks = self.runes[1]
+        prims = f"Primary - {self.runes[0]}, {perks[0]}, {perks[1]}, {perks[2]}, {perks[3]}\n"
+        secs = f"Secondary - {self.runes[2]}: {perks[4]}, {perks[5]}\n"
+        stat_mods = f"Stat Mods - {perks[6]}, {perks[7]}, {perks[8]}\n"
+        runes = "Runes\n" + div + prims + secs + stat_mods
 
         return main + div + champ + items + runes
 
@@ -106,50 +107,49 @@ class UltimateBravery:
     def randomize_runes(self):
         """ """
         trees = sample(list(self.data.runes_dict.keys()), 2)
-        prims = self.__randomize_prims(trees[0], ["Slot1", "Slot2", "Slot3"])
-        secs = self.__randomize_secs(trees[1], ["Slot1", "Slot2"])
-        stat_mods = self.__randomize_stat_mods()
-        runes = prims + secs + stat_mods
+        prim_tree = trees[0]
+        sec_tree = trees[1]
+
+        prim_perks = self.__randomize_prims(prim_tree, ["Slot1", "Slot2", "Slot3"])
+        sec_perks = self.__randomize_secs(sec_tree, ["Slot1", "Slot2"])
+        stat_mod_perks = self.__randomize_stat_mods()
+        perks = prim_perks + sec_perks + stat_mod_perks
+        runes = [prim_tree, perks, sec_tree]
 
         return runes
 
 
     def __randomize_prims(self, prim_tree, slots):
         """ """
-        prims = []
-        prims.append(prim_tree)
+        prim_perks = []
 
         prim_keystone = choice((self.data.runes_dict[prim_tree]["Keystones"]))
-        prims.append(Rune(prim_keystone["name"], prim_keystone["id"], prim_keystone["image"]))
+        prim_perks.append(Rune(prim_keystone["name"], prim_keystone["id"], prim_keystone["image"]))
 
         for slot in slots:
             prim_rune = choice(list(self.data.runes_dict[prim_tree][slot]))
-            prims.append(Rune(prim_rune["name"], prim_rune["id"], prim_rune["image"]))
+            prim_perks.append(Rune(prim_rune["name"], prim_rune["id"], prim_rune["image"]))
             
-        return prims
+        return prim_perks
 
 
     def __randomize_secs(self, sec_tree, slots):
         """ """
-        secs = []
-        secs.append(sec_tree)
-
-        sec_keystone = choice(list(self.data.runes_dict[sec_tree]["Keystones"]))
-        secs.append(Rune(sec_keystone["name"], sec_keystone["id"], sec_keystone["image"]))
+        sec_perks = []
 
         for slot in slots:
             sec_rune = choice(list(self.data.runes_dict[sec_tree][slot]))
-            secs.append(Rune(sec_rune["name"], sec_rune["id"], sec_rune["image"]))
+            sec_perks.append(Rune(sec_rune["name"], sec_rune["id"], sec_rune["image"]))
             
-        return secs
+        return sec_perks
 
 
     def __randomize_stat_mods(self):
         """ """
-        stat_mods_list = []
+        stat_mod_perks = []
         for slot in self.data.stat_mods_list:
             random_stat_mod = choice(slot)
             stat_mod = Rune(random_stat_mod["name"], random_stat_mod["id"], random_stat_mod["image"])
-            stat_mods_list.append(stat_mod)
+            stat_mod_perks.append(stat_mod)
 
-        return stat_mods_list
+        return stat_mod_perks
