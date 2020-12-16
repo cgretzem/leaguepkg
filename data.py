@@ -3,6 +3,7 @@
 """
 import json
 import urllib.request
+import requests
 import os, tarfile
 from os import path
 from update import set_champions, set_items, set_runes, set_stat_mods
@@ -41,12 +42,14 @@ class Data:
 
     """
     def __init__(self):
+        self.dragon_version = requests.get('https://ddragon.leagueoflegends.com/api/versions.json').json()[0]
         self.check_data()
 
         self.champ_list = self.get_champions()
         self.item_dict = self.get_items()
         self.runes_dict = self.get_runes()
         self.stat_mods_list = self.get_stat_mods()
+        
         
 
     def __str__(self):
@@ -62,7 +65,7 @@ class Data:
 
     def get_champions(self):
         """ """
-        with open("champions.txt", "r") as f:
+        with open("dragon/champions.txt", "r") as f:
             champ_list = json.load(f)
         
         return champ_list
@@ -70,7 +73,7 @@ class Data:
 
     def get_items(self):
         """ """
-        with open("items.txt", "r") as f:
+        with open("dragon/items.txt", "r") as f:
             item_dict = json.load(f)
 
         return item_dict
@@ -78,7 +81,7 @@ class Data:
 
     def get_runes(self):
         """ """
-        with open("runes.txt", "r") as f:
+        with open("dragon/runes.txt", "r") as f:
             runes_dict = json.load(f)
         
         return runes_dict
@@ -86,7 +89,7 @@ class Data:
     
     def get_stat_mods(self):
         """ """
-        with open("stat_mods.txt", "r") as f:
+        with open("dragon/stat_mods.txt", "r") as f:
             stat_mods_list = json.load(f)
 
         return stat_mods_list
@@ -94,16 +97,20 @@ class Data:
 
     def check_data(self):
         """ """
-        zip_path = 'dragontail-10.25.1.tgz'
+        zip_path = f'/dragon/dragontail-{self.dragon_version}.tgz'
         if not path.exists(zip_path):
-            url = 'https://ddragon.leagueoflegends.com/cdn/dragontail-10.25.1.tgz'
-            outDir = f'{os.getcwd()}/dragontail-10.25.1.tgz'
+            if not path.exists('dragon'):
+                os.mkdir('dragon')
+            url = f'https://ddragon.leagueoflegends.com/cdn/dragontail-{self.dragon_version}.tgz'
+            
+
+            outDir = f'{os.getcwd()}/dragon/dragontail-{self.dragon_version}.tgz'
             urllib.request.urlretrieve(url, outDir)
             tar = tarfile.open(outDir, 'r:gz')
-            tar.extractall()
+            tar.extractall(path = 'dragon')
+            
 
-
-        data_files = ['champions.txt', 'items.txt', 'runes.txt', 'stat_mods.txt']
+        data_files = ['dragon/champions.txt', 'dragon/items.txt', 'dragon/runes.txt', 'dragon/stat_mods.txt']
         for txt in data_files:
             if not path.exists(txt):
                 self.update_data()
@@ -112,16 +119,16 @@ class Data:
     
     def update_data(self):
         """ Updates and stores LOL dicts in respective .txt files """
-        with open("champions.txt", "w") as f:
-            json.dump(set_champions(), f, indent=2)
+        with open("dragon/champions.txt", "w") as f:
+            json.dump(set_champions(self.dragon_version), f, indent=2)
 
-        with open("items.txt", "w") as f:
-            json.dump(set_items(), f, indent=2)
+        with open("dragon/items.txt", "w") as f:
+            json.dump(set_items(self.dragon_version), f, indent=2)
 
-        with open("runes.txt", "w") as f:
-            json.dump(set_runes(), f, indent=2)
+        with open("dragon/runes.txt", "w") as f:
+            json.dump(set_runes(self.dragon_version), f, indent=2)
 
-        with open("stat_mods.txt", "w") as f:
+        with open("dragon/stat_mods.txt", "w") as f:
             json.dump(set_stat_mods(), f, indent=2)
 
 if __name__ == '__main__':
