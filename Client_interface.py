@@ -221,11 +221,12 @@ class Client():
         `Response` : the response object from the post request.
         """
         data = self.get_current_page()
+        page_id = data['id']
         data["name"] = name
         data["selectedPerkIds"] = perks
         data["primaryStyleId"] = primary_tree
         data["subStyleId"] = secondary_tree
-        return self.post_req('/lol-perks/v1/currentpage', data)
+        return self.put_req(f'/lol-perks/v1/pages/{page_id}', json.dumps(data))
 
     def change_summoners(self, spell_1 : int, spell_2 : int):
         """
