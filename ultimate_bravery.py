@@ -5,7 +5,7 @@ import json
 from random import choice, sample
 from champion import Champion, Item, Rune
 from data import Data
-
+import leaguepkg
 
 class UltimateBravery:
     """
@@ -42,11 +42,12 @@ class UltimateBravery:
 
 
     """
-    def __init__(self):
+    def __init__(self, client : leaguepkg.Client_interface.Client):
         self.data = Data()
-        #self.client = 
-        self.avail_champ_ids = ["12", "13", "14"]
+        self.client = client
+        self.avail_champ_ids = self.client.get_pickable_champions()
         self.champion = self.randomize_champion(self.avail_champ_ids)
+        self.ban = self.randomize_champion(self.avail_champ_ids)
         self.items = self.randomize_items()
         self.runes = self.randomize_runes()
 
